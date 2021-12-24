@@ -1,29 +1,31 @@
+from typing import Tuple
+
 import torch
 from datasets import load_dataset
-from torch import nn
+from torch import nn, Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from src.modules.transformer_tranlsation_model import Seq2SeqTransformer
+from src.modules.transformer_translation_model import Seq2SeqTransformer
 
 
-# def generate_square_subsequent_mask(sz: int) -> Tensor:
-#     mask = (torch.triu(torch.ones((sz, sz), device=DEVICE)) == 1).transpose(0, 1)
-#     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-#     return mask
-#
-#
-# def create_mask(src: Tensor, tgt: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-#     src_seq_len = src.shape[0]
-#     tgt_seq_len = tgt.shape[0]
-#
-#     tgt_mask = generate_square_subsequent_mask(tgt_seq_len)
-#     src_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
-#
-#     src_padding_mask = (src == PAD_IDX).transpose(0, 1)
-#     tgt_padding_mask = (tgt == PAD_IDX).transpose(0, 1)
-#     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
+def generate_square_subsequent_mask(size: int, device: torch.device) -> Tensor:
+    mask = (torch.triu(torch.ones((size, size), device=device)) == 1).transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    return mask
+
+
+def create_mask(src: Tensor, tgt: Tensor, device, pad_idx: int = 1) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    src_seq_len = src.shape[0]
+    tgt_seq_len = tgt.shape[0]
+
+    tgt_mask = generate_square_subsequent_mask(tgt_seq_len, device)
+    src_mask = torch.zeros((src_seq_len, src_seq_len), device=device).to(torch.bool)
+
+    src_padding_mask = (src == pad_idx).transpose(0, 1)
+    tgt_padding_mask = (tgt == pad_idx).transpose(0, 1)
+    return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
 
 def train(model: torch.nn.Module,
@@ -44,8 +46,7 @@ def train(model: torch.nn.Module,
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     dataset = load_dataset('opus_books', 'en-ru', split='train')['translation']
-    tokenizer = AutoTokenizer.from_pretrained('facebook/mbart-large-cc25', use_fast=True, src_lang='en_XX',
-                                              tgt_lang='ro_RU')
+    tokenizer = AutoTokenizer.from_pretrained('Helsinki-NLP/opus-mt-en-ru', use_fast=True)
     train_dataloader = DataLoader(dataset, batch_size=batch_size)
 
     with tqdm(total=epochs) as pbar:
@@ -59,12 +60,14 @@ def train(model: torch.nn.Module,
                 src_ids = src['input_ids'].transpose(1, 0).to(device)
                 # src_mask = src['attention_mask'].bool().reshape((batch_size, -1)).to(device)
                 tgt_ids = tgt['input_ids'].transpose(1, 0).to(device)
+                src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src_ids, tgt_ids, device)
                 # tgt_mask = tgt['attention_mask'].bool().reshape((batch_size, -1)).to(device)
                 # src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(source, tgt_input)
 
-                logits = model(src_ids, tgt_ids)
-                print(logits.shape)
-                print(logits.reshape(-1, logits.shape[-1]).shape)
+                # logits = model(src_ids, tgt_ids)
+                logits = model(src_ids, tgt_ids, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
+                # print(logits.shape)
+                # print(logits.reshape(-1, logits.shape[-1]).shape)
 
                 loss = criterion(logits.reshape(-1, logits.shape[-1]), tgt_ids.reshape(-1))
                 loss.backward()
@@ -72,7 +75,7 @@ def train(model: torch.nn.Module,
                 print(loss.item())
                 optimizer.zero_grad()
                 optimizer.step()
-                return 0
+                # return 0
             pbar.update(1)
 
     # return losses / len(train_dataloader)
@@ -131,4 +134,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-ru")
+    # print(tokenizer.decode(tokenizer.encode('ето даже роботоётййй??')))
+    # print(tokenizer.decode(tokenizer.encode('ia  ms o d asd??')))
+    print(len(tokenizer.get_vocab()))
+    # main()
