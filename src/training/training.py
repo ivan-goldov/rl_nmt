@@ -54,8 +54,8 @@ def train(model: torch.nn.Module,
             for d in train_dataloader:
                 src = d['en']
                 tgt = d['ru']
-                src = tokenizer(src, return_tensors='pt', padding='max_length', truncation=True, max_length=128)
-                tgt = tokenizer(tgt, return_tensors='pt', padding='max_length', truncation=True, max_length=128)
+                src = tokenizer(src, return_tensors='pt', padding='max_length', truncation=True, max_length=32)
+                tgt = tokenizer(tgt, return_tensors='pt', padding='max_length', truncation=True, max_length=32)
 
                 src_ids = src['input_ids'].transpose(1, 0).to(device)
                 # src_mask = src['attention_mask'].bool().reshape((batch_size, -1)).to(device)
@@ -134,8 +134,4 @@ def main():
 
 
 if __name__ == '__main__':
-    tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-ru")
-    # print(tokenizer.decode(tokenizer.encode('ето даже роботоётййй??')))
-    # print(tokenizer.decode(tokenizer.encode('ia  ms o d asd??')))
-    print(len(tokenizer.get_vocab()))
-    # main()
+    main()
