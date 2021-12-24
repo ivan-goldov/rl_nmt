@@ -51,6 +51,7 @@ def train(model: torch.nn.Module,
 
     with tqdm(total=epochs) as pbar:
         for epoch in range(epochs):
+            epoch_loss = 0
             for d in train_dataloader:
                 src = d['en']
                 tgt = d['ru']
@@ -72,10 +73,11 @@ def train(model: torch.nn.Module,
                 loss = criterion(logits.reshape(-1, logits.shape[-1]), tgt_ids.reshape(-1))
                 loss.backward()
                 torch.save(model.state_dict(), './checkpoint_model')
-                print(loss.item())
+                epoch_loss += loss.item()
                 optimizer.zero_grad()
                 optimizer.step()
                 # return 0
+            print(f'Epoch loss: {epoch_loss / len(train_dataloader)}')
             pbar.update(1)
 
     # return losses / len(train_dataloader)
