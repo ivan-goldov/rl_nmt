@@ -5,7 +5,7 @@ from datasets import load_dataset
 from torch import nn, Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, GPT2TokenizerFast
 
 from src.modules.transformer_translation_model import Seq2SeqTransformer
 
@@ -30,7 +30,7 @@ def create_mask(src: Tensor, tgt: Tensor, device, pad_idx: int = 1) -> Tuple[Ten
 
 def train(model: torch.nn.Module,
           epochs: int = 20,
-          batch_size: int = 2,
+          batch_size: int = 32,
           lr: float = 3e-4,
           device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
           pad_idx: int = 1):
@@ -45,8 +45,8 @@ def train(model: torch.nn.Module,
     criterion = torch.nn.CrossEntropyLoss(ignore_index=pad_idx)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    dataset = load_dataset('opus_books', 'en-ru', split='train')['translation']
-    tokenizer = AutoTokenizer.from_pretrained('Helsinki-NLP/opus-mt-en-ru', use_fast=True)
+    dataset = load_dataset('opus_books', 'en-ru', split='train')['translation'][15]
+    tokenizer = GPT2TokenizerFast.from_pretrained('../../nmt_tokenizer')
     train_dataloader = DataLoader(dataset, batch_size=batch_size)
 
     with tqdm(total=epochs) as pbar:
