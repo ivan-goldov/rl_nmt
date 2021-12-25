@@ -5,7 +5,7 @@ from datasets import load_dataset
 from torch import nn, Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer, GPT2TokenizerFast
+from transformers import AutoTokenizer, GPT2TokenizerFast, FSMTTokenizer
 
 from src.modules.transformer_translation_model import Seq2SeqTransformer
 
@@ -41,12 +41,15 @@ def train(model: torch.nn.Module,
         if param.dim() > 1:
             nn.init.xavier_uniform_(param)
 
-    losses = 0
     criterion = torch.nn.CrossEntropyLoss(ignore_index=pad_idx)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    dataset = load_dataset('opus_books', 'en-ru', split='train')['translation'][15]
-    tokenizer = GPT2TokenizerFast.from_pretrained('../../nmt_tokenizer')
+    dataset = load_dataset('opus_books', 'en-ru', split='train')['translation'][:2]
+    # tokenizer = GPT2TokenizerFast.from_pretrained('../nmt_tokenizer')
+
+    mname = "facebook/wmt19-en-ru"
+    tokenizer = FSMTTokenizer.from_pretrained(mname)
+
     train_dataloader = DataLoader(dataset, batch_size=batch_size)
 
     with tqdm(total=epochs) as pbar:
@@ -62,25 +65,17 @@ def train(model: torch.nn.Module,
                 # src_mask = src['attention_mask'].bool().reshape((batch_size, -1)).to(device)
                 tgt_ids = tgt['input_ids'].transpose(1, 0).to(device)
                 src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src_ids, tgt_ids, device)
-                # tgt_mask = tgt['attention_mask'].bool().reshape((batch_size, -1)).to(device)
-                # src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(source, tgt_input)
 
                 # logits = model(src_ids, tgt_ids)
-                logits = model(src_ids, tgt_ids, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask)
-                # print(logits.shape)
-                # print(logits.reshape(-1, logits.shape[-1]).shape)
-
+                logits = model(src_ids, tgt_ids, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
                 loss = criterion(logits.reshape(-1, logits.shape[-1]), tgt_ids.reshape(-1))
                 loss.backward()
                 torch.save(model.state_dict(), './checkpoint_model')
                 epoch_loss += loss.item()
                 optimizer.zero_grad()
                 optimizer.step()
-                # return 0
             print(f'Epoch loss: {epoch_loss / len(train_dataloader)}')
             pbar.update(1)
-
-    # return losses / len(train_dataloader)
 
 
 # def greedy_decode(model, src, src_mask, max_len, start_symbol):
@@ -105,29 +100,6 @@ def train(model: torch.nn.Module,
 #             break
 #     return ys
 
-
-# def evaluate(model):
-#     model.eval()
-#     losses = 0
-#
-#     val_iter = Multi30k(split='valid', language_pair=(SRC_LANGUAGE, TGT_LANGUAGE))
-#     val_dataloader = DataLoader(val_iter, batch_size=BATCH_SIZE, collate_fn=collate_fn)
-#
-#     for src, tgt in val_dataloader:
-#         src = src.to(DEVICE)
-#         tgt = tgt.to(DEVICE)
-#
-#         tgt_input = tgt[:-1, :]
-#
-#         src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src, tgt_input)
-#
-#         logits = model(src, tgt_input, src_mask, tgt_mask,src_padding_mask, tgt_padding_mask, src_padding_mask)
-#
-#         tgt_out = tgt[1:, :]
-#         loss = criterion(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
-#         losses += loss.item()
-#
-#     return losses / len(val_dataloader)
 
 def main():
     torch.manual_seed(0)

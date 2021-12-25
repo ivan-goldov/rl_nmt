@@ -1,5 +1,6 @@
-from datasets import load_dataset
-from tokenizers import decoders, models, pre_tokenizers, processors, trainers, Tokenizer
+from datasets import Dataset, load_dataset
+from tokenizers import decoders, models, normalizers, pre_tokenizers, processors, trainers, Tokenizer
+from torch import nn
 from transformers import GPT2TokenizerFast
 
 
@@ -14,7 +15,7 @@ def batch_iterator(batch_size: int = 512):
 def main():
     tokenizer = Tokenizer(models.BPE())
     tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
-    trainer = trainers.BpeTrainer(vocab_size=25_000, special_tokens=['<|endoftext|>'])
+    trainer = trainers.BpeTrainer(vocab_size=15_000, special_tokens=['<|endoftext|>'])
     tokenizer.train_from_iterator(batch_iterator(), trainer=trainer)
     tokenizer.post_processor = processors.ByteLevel(trim_offsets=False)
     tokenizer.decoder = decoders.ByteLevel()

@@ -39,8 +39,8 @@ class TokenEmbedding(nn.Module):
 
 class Seq2SeqTransformer(nn.Module):
     def __init__(self,
-                 src_vocab_size: int = 25_000,
-                 tgt_vocab_size: int = 25_000,
+                 src_vocab_size: int = 31639,
+                 tgt_vocab_size: int = 31639,
                  num_encoder_layers: int = 6,
                  num_decoder_layers: int = 6,
                  n_head: int = 8,
