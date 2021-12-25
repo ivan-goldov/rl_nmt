@@ -65,8 +65,8 @@ class Seq2SeqTransformer(nn.Module):
     def forward(self,
                 src: Tensor,
                 trg: Tensor,
-                src_mask: Tensor = None,
-                tgt_mask: Tensor = None,
+                src_mask: Tensor,
+                tgt_mask: Tensor,
                 src_padding_mask: Optional[Tensor] = None,
                 tgt_padding_mask: Optional[Tensor] = None,
                 memory_key_padding_mask: Optional[Tensor] = None):

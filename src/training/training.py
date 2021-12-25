@@ -28,12 +28,13 @@ def create_mask(src: Tensor, tgt: Tensor, device, pad_idx: int = 1) -> Tuple[Ten
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
 
-def train(model: torch.nn.Module,
+def train(model: torch.nn.Module = None,
           epochs: int = 20,
           batch_size: int = 32,
           lr: float = 3e-4,
           device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
           pad_idx: int = 1):
+    model = Seq2SeqTransformer()
     model.to(device)
     model.train()
 
@@ -103,8 +104,7 @@ def train(model: torch.nn.Module,
 
 def main():
     torch.manual_seed(0)
-    transformer = Seq2SeqTransformer()
-    train(transformer)
+    train()
 
 
 if __name__ == '__main__':
