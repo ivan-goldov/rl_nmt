@@ -67,8 +67,8 @@ def train(model: torch.nn.Module = None,
                 tgt_ids = tgt['input_ids'].transpose(1, 0).to(device)
                 src_mask, tgt_mask, src_padding_mask, tgt_padding_mask = create_mask(src_ids, tgt_ids, device)
 
-                # logits = model(src_ids, tgt_ids)
-                logits = model(src_ids, tgt_ids, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
+                logits = model(src_ids, tgt_ids)
+                # logits = model(src_ids, tgt_ids, src_mask, tgt_mask, src_padding_mask, tgt_padding_mask, src_padding_mask)
                 loss = criterion(logits.reshape(-1, logits.shape[-1]), tgt_ids.reshape(-1))
                 loss.backward()
                 torch.save(model.state_dict(), './checkpoint_model')
